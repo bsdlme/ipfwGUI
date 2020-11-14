@@ -38,33 +38,34 @@ SERVICE_BIN = '/usr/sbin/service'
 class simpleIpfwGui(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Simple ipfw GUI for FreeBSD")
+        self.setWindowTitle("Simple Firewall GUI for FreeBSD")
         self.centralWidget = QWidget(self)
         self.setCentralWidget(self.centralWidget)
 
         self.layout = QGridLayout()
         self.centralWidget.setLayout(self.layout)
 
+        # firewallEnabled: firewall_enabled=YES in rc.conf, firewallRunning: ipfw loaded and running
         (self.firewallEnabled, self.firewallRunning) = self.getFirewallState()
         self.allowedPorts = self.getAllowedPorts()
 
         self.widgets()
 
     def widgets(self):
-        self.labelTitle = QLabel("Simple ipfw GUI for FreeBSD")
+        self.labelTitle = QLabel("Simple Firewalll GUI for FreeBSD")
         self.labelTitle.setAlignment(Qt.AlignCenter)
 
-        self.labelIpfwEnable = QLabel("Enable ipfw Firewall? ")
-        self.labelOpenPorts = QLabel("Allowed ports:")
+        self.labelcheckBoxIpfwEnable = QLabel("Enable Firewall? ")
+        self.labelOpenPorts = QLabel("Allowed incoming ports:")
 
-        self.IpfwEnable = QCheckBox()
-        self.IpfwEnable.setToolTip('Check this to enable the firewall.')
+        self.checkBoxIpfwEnable = QCheckBox()
+        self.checkBoxIpfwEnable.setToolTip('Check this to enable the firewall.')
         if self.firewallEnabled.lower() == "yes":
-            self.IpfwEnable.setChecked(True)
+            self.checkBoxIpfwEnable.setChecked(True)
 
-        self.allowedPortsLE = QLineEdit()
-        self.allowedPortsLE.setFixedWidth(120)
-        self.allowedPortsLE.setText(self.allowedPorts)
+        self.editAllowedPorts = QLineEdit()
+        self.editAllowedPorts.setFixedWidth(120)
+        self.editAllowedPorts.setText(self.allowedPorts)
 
         self.buttonApply = QPushButton("Apply")
         self.buttonApply.setFixedWidth(120)
@@ -76,13 +77,14 @@ class simpleIpfwGui(QMainWindow):
 
         self.statusBar = QStatusBar()
         self.statusBar.showMessage(self.firewallRunning)
+        self.updateStatusBar()
         self.setStatusBar(self.statusBar)
 
         self.layout.addWidget(self.labelTitle, 0, 1, alignment=Qt.AlignBottom)
-        self.layout.addWidget(self.labelIpfwEnable, 1, 0, alignment=Qt.AlignRight)
+        self.layout.addWidget(self.labelcheckBoxIpfwEnable, 1, 0, alignment=Qt.AlignRight)
         self.layout.addWidget(self.labelOpenPorts, 2, 0, alignment=Qt.AlignRight)
-        self.layout.addWidget(self.IpfwEnable, 1, 1, alignment=Qt.AlignLeft)
-        self.layout.addWidget(self.allowedPortsLE, 2, 1, alignment=Qt.AlignLeft)
+        self.layout.addWidget(self.checkBoxIpfwEnable, 1, 1, alignment=Qt.AlignLeft)
+        self.layout.addWidget(self.editAllowedPorts, 2, 1, alignment=Qt.AlignLeft)
         self.layout.addWidget(self.buttonApply, 3, 1, alignment=Qt.AlignRight)
         self.layout.addWidget(self.buttonQuit, 3, 2, alignment=Qt.AlignRight)
 
@@ -91,7 +93,7 @@ class simpleIpfwGui(QMainWindow):
     def applyChanges(self):
         if not self.checkPrivileges():
             return
-        if self.IpfwEnable.isChecked() == True:
+        if self.checkBoxIpfwEnable.isChecked() == True:
             self.fwEnable = "YES"
             self.serviceAction = "start"
         else:
@@ -101,15 +103,17 @@ class simpleIpfwGui(QMainWindow):
         print(check_output([SYSRC_BIN, 'firewall_enable=' + self.fwEnable]).rstrip().decode("utf-8"))
         print(check_output([SYSRC_BIN, 'firewall_type=workstation']).rstrip().decode("utf-8"))
         print(check_output([SYSRC_BIN, 'firewall_allowservices=any']).rstrip().decode("utf-8"))
-        print(check_output([SYSRC_BIN, 'firewall_myservices=' + self.allowedPortsLE.text()]).rstrip().decode("utf-8"))
+        print(check_output([SYSRC_BIN, 'firewall_myservices=' + self.editAllowedPorts.text()]).rstrip().decode("utf-8"))
         print(check_output([SERVICE_BIN, 'ipfw', self.serviceAction]))
         (self.firewallEnabled, self.firewallRunning) = self.getFirewallState()
+        self.updateStatusBar()
         self.statusBar.showMessage(self.firewallRunning)
 
     def getFirewallState(self):
         self.firewallEnabled = check_output([SYSRC_BIN, '-n', 'firewall_enable']).rstrip().decode("utf-8")
         self.firewallRunning = check_output(SERVICE_BIN + ' ipfw forcestatus; exit 0', shell=True).rstrip().decode("utf-8")
         self.firewallRunning = self.firewallRunning.replace('enabled', 'running')
+        self.firewallRunning = self.firewallRunning.replace('ipfw', 'Firewall')
         return (self.firewallEnabled, self.firewallRunning)
 
     def getAllowedPorts(self):
@@ -117,10 +121,17 @@ class simpleIpfwGui(QMainWindow):
 
     def checkPrivileges(self):
         if os.geteuid() != 0:
-            QMessageBox.information(self, "Not enough privileges", "You started the firewall management GUI as a regular user and can only read the firewall settings.\n\nIf you want to edit settings, run the firewall management GUI as root.")
+            QMessageBox.information(self, "Not enough privileges",
+              "You started the firewall management GUI as a regular user and can only read the firewall settings.\n\nIf you want to edit settings, run the firewall management GUI as root.")
             return False
         else:
             return True
+
+    def updateStatusBar(self):
+        if self.firewallRunning == "Firewall is running":
+            self.statusBar.setStyleSheet("background-color : lightgreen") 
+        else:
+            self.statusBar.setStyleSheet("background-color : pink") 
 
 
 def main():
