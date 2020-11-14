@@ -26,7 +26,7 @@ import os
 import sys
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QMessageBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QMessageBox, QStatusBar
 from PyQt5.QtWidgets import QGridLayout
 from PyQt5.QtWidgets import QLabel, QPushButton, QLineEdit, QCheckBox
 
@@ -45,7 +45,7 @@ class simpleIpfwGui(QMainWindow):
         self.layout = QGridLayout()
         self.centralWidget.setLayout(self.layout)
 
-        self.firewallEnabled = self.getFirewallState()
+        (self.firewallEnabled, self.firewallRunning) = self.getFirewallState()
         self.allowedPorts = self.getAllowedPorts()
 
         self.widgets()
@@ -74,6 +74,10 @@ class simpleIpfwGui(QMainWindow):
         self.buttonQuit.setFixedWidth(120)
         self.buttonQuit.clicked.connect(QApplication.instance().quit)
 
+        self.statusBar = QStatusBar()
+        self.statusBar.showMessage(self.firewallRunning)
+        self.setStatusBar(self.statusBar)
+
         self.layout.addWidget(self.labelTitle, 0, 1, alignment=Qt.AlignBottom)
         self.layout.addWidget(self.labelIpfwEnable, 1, 0, alignment=Qt.AlignRight)
         self.layout.addWidget(self.labelOpenPorts, 2, 0, alignment=Qt.AlignRight)
@@ -99,9 +103,14 @@ class simpleIpfwGui(QMainWindow):
         print(check_output([SYSRC_BIN, 'firewall_allowservices=any']).rstrip().decode("utf-8"))
         print(check_output([SYSRC_BIN, 'firewall_myservices=' + self.allowedPortsLE.text()]).rstrip().decode("utf-8"))
         print(check_output([SERVICE_BIN, 'ipfw', self.serviceAction]))
+        (self.firewallEnabled, self.firewallRunning) = self.getFirewallState()
+        self.statusBar.showMessage(self.firewallRunning)
 
     def getFirewallState(self):
-        return (check_output([SYSRC_BIN, '-n', 'firewall_enable'])).rstrip().decode("utf-8")
+        self.firewallEnabled = check_output([SYSRC_BIN, '-n', 'firewall_enable']).rstrip().decode("utf-8")
+        self.firewallRunning = check_output(SERVICE_BIN + ' ipfw forcestatus; exit 0', shell=True).rstrip().decode("utf-8")
+        self.firewallRunning = self.firewallRunning.replace('enabled', 'running')
+        return (self.firewallEnabled, self.firewallRunning)
 
     def getAllowedPorts(self):
         return (check_output([SYSRC_BIN, '-n', 'firewall_myservices'])).rstrip().decode("utf-8")
