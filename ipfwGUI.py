@@ -45,8 +45,8 @@ class simpleIpfwGui(QMainWindow):
         self.layout = QGridLayout()
         self.centralWidget.setLayout(self.layout)
 
-        # firewallEnabled: firewall_enabled=YES in rc.conf, firewallRunning: ipfw loaded and running
-        (self.firewallEnabled, self.firewallRunning) = self.getFirewallState()
+        # firewallEnabled: firewall_enabled=YES in rc.conf, firewallRunningString: ipfw loaded and running
+        (self.firewallEnabled, self.firewallRunningString, self.firewallRunningBool) = self.getFirewallState()
         self.allowedPorts = self.getAllowedPorts()
 
         self.widgets()
@@ -75,8 +75,12 @@ class simpleIpfwGui(QMainWindow):
         self.buttonQuit.setFixedWidth(120)
         self.buttonQuit.clicked.connect(QApplication.instance().quit)
 
+        self.buttonHelp = QPushButton("Help")
+        self.buttonHelp.setFixedWidth(120)
+        self.buttonHelp.clicked.connect(QApplication.instance().quit)
+
         self.statusBar = QStatusBar()
-        self.statusBar.showMessage(self.firewallRunning)
+        self.statusBar.showMessage(self.firewallRunningString)
         self.updateStatusBar()
         self.setStatusBar(self.statusBar)
 
@@ -85,8 +89,9 @@ class simpleIpfwGui(QMainWindow):
         self.layout.addWidget(self.labelOpenPorts, 2, 0, alignment=Qt.AlignRight)
         self.layout.addWidget(self.checkBoxIpfwEnable, 1, 1, alignment=Qt.AlignLeft)
         self.layout.addWidget(self.editAllowedPorts, 2, 1, alignment=Qt.AlignLeft)
-        self.layout.addWidget(self.buttonApply, 3, 1, alignment=Qt.AlignRight)
-        self.layout.addWidget(self.buttonQuit, 3, 2, alignment=Qt.AlignRight)
+        self.layout.addWidget(self.buttonHelp, 3, 1, alignment=Qt.AlignRight)
+        self.layout.addWidget(self.buttonApply, 3, 2, alignment=Qt.AlignRight)
+        self.layout.addWidget(self.buttonQuit, 3, 3, alignment=Qt.AlignRight)
 
         self.checkPrivileges()
 
@@ -105,16 +110,19 @@ class simpleIpfwGui(QMainWindow):
         print(check_output([SYSRC_BIN, 'firewall_allowservices=any']).rstrip().decode("utf-8"))
         print(check_output([SYSRC_BIN, 'firewall_myservices=' + self.editAllowedPorts.text()]).rstrip().decode("utf-8"))
         print(check_output([SERVICE_BIN, 'ipfw', self.serviceAction]))
-        (self.firewallEnabled, self.firewallRunning) = self.getFirewallState()
+        (self.firewallEnabled, self.firewallRunningString, self.firewallRunningBool) = self.getFirewallState()
         self.updateStatusBar()
-        self.statusBar.showMessage(self.firewallRunning)
 
     def getFirewallState(self):
         self.firewallEnabled = check_output([SYSRC_BIN, '-n', 'firewall_enable']).rstrip().decode("utf-8")
-        self.firewallRunning = check_output(SERVICE_BIN + ' ipfw forcestatus; exit 0', shell=True).rstrip().decode("utf-8")
-        self.firewallRunning = self.firewallRunning.replace('enabled', 'running')
-        self.firewallRunning = self.firewallRunning.replace('ipfw', 'Firewall')
-        return (self.firewallEnabled, self.firewallRunning)
+        self.firewallRunningString = check_output(SERVICE_BIN + ' ipfw forcestatus; exit 0', shell=True).rstrip().decode("utf-8")
+        if self.firewallRunningString == "ipfw is enabled":
+            self.firewallRunningBool = True
+        else:
+            self.firewallRunningBool = False
+        self.firewallRunningString = self.firewallRunningString.replace('enabled', 'running')
+        self.firewallRunningString = self.firewallRunningString.replace('ipfw', 'Firewall')
+        return (self.firewallEnabled, self.firewallRunningString, self.firewallRunningBool)
 
     def getAllowedPorts(self):
         return (check_output([SYSRC_BIN, '-n', 'firewall_myservices'])).rstrip().decode("utf-8")
@@ -128,10 +136,11 @@ class simpleIpfwGui(QMainWindow):
             return True
 
     def updateStatusBar(self):
-        if self.firewallRunning == "Firewall is running":
+        if self.firewallRunningBool == True:
             self.statusBar.setStyleSheet("background-color : lightgreen") 
         else:
             self.statusBar.setStyleSheet("background-color : pink") 
+        self.statusBar.showMessage(self.firewallRunningString)
 
 
 def main():
