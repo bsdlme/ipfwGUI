@@ -56,7 +56,7 @@ class simpleIpfwGui(QMainWindow):
         self.labelTitle.setAlignment(Qt.AlignCenter)
 
         self.labelcheckBoxIpfwEnable = QLabel("Enable Firewall? ")
-        self.labelOpenPorts = QLabel("Allowed incoming ports:")
+        self.labelAllowedPorts = QLabel("Allowed incoming ports:")
 
         self.checkBoxIpfwEnable = QCheckBox()
         self.checkBoxIpfwEnable.setToolTip('Check this to enable the firewall.')
@@ -84,14 +84,17 @@ class simpleIpfwGui(QMainWindow):
         self.updateStatusBar()
         self.setStatusBar(self.statusBar)
 
-        self.layout.addWidget(self.labelTitle, 0, 1, alignment=Qt.AlignBottom)
-        self.layout.addWidget(self.labelcheckBoxIpfwEnable, 1, 0, alignment=Qt.AlignRight)
-        self.layout.addWidget(self.labelOpenPorts, 2, 0, alignment=Qt.AlignRight)
-        self.layout.addWidget(self.checkBoxIpfwEnable, 1, 1, alignment=Qt.AlignLeft)
-        self.layout.addWidget(self.editAllowedPorts, 2, 1, alignment=Qt.AlignLeft)
-        self.layout.addWidget(self.buttonHelp, 3, 1, alignment=Qt.AlignRight)
-        self.layout.addWidget(self.buttonApply, 3, 2, alignment=Qt.AlignRight)
-        self.layout.addWidget(self.buttonQuit, 3, 3, alignment=Qt.AlignRight)
+        self.layout.addWidget(self.labelTitle,              0, 1)
+
+        self.layout.addWidget(self.labelcheckBoxIpfwEnable, 1, 0)
+        self.layout.addWidget(self.checkBoxIpfwEnable,      1, 1)
+
+        self.layout.addWidget(self.labelAllowedPorts,       2, 0)
+        self.layout.addWidget(self.editAllowedPorts,        2, 1)
+
+        self.layout.addWidget(self.buttonHelp,              3, 0)
+        self.layout.addWidget(self.buttonApply,             3, 1, alignment=Qt.AlignRight)
+        self.layout.addWidget(self.buttonQuit,              3, 2)
 
         self.checkPrivileges()
 
