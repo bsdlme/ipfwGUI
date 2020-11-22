@@ -27,7 +27,7 @@ import sys
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QMessageBox, QStatusBar
-from PyQt5.QtWidgets import QGridLayout
+from PyQt5.QtWidgets import QGridLayout, QStyle
 from PyQt5.QtWidgets import QLabel, QPushButton, QLineEdit, QCheckBox
 
 from subprocess import check_output
@@ -151,6 +151,8 @@ def main():
 
     gui = simpleIpfwGui()
     gui.show()
+    gui.setGeometry(QStyle.alignedRect(Qt.LeftToRight, Qt.AlignCenter, gui.size(), 
+        ipfwGUI.primaryScreen().geometry()))
 
     sys.exit(ipfwGUI.exec())
 
