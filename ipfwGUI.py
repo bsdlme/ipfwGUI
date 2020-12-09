@@ -68,7 +68,7 @@ class simpleIpfwGui(QMainWindow):
 
         self.editAllowedPorts = QLineEdit()
         self.editAllowedPorts.setFixedWidth(340)
-        self.editAllowedPorts.setText(self.allowedPorts)
+        self.editAllowedPorts.setText(' '.join(self.allowedPorts))
 
         self.buttonApply = QPushButton("Apply")
         self.buttonApply.setFixedWidth(120)
@@ -110,19 +110,22 @@ class simpleIpfwGui(QMainWindow):
         self.tableContent = self.getListenPorts().strip().decode("utf-8")
 
         self.tableWidget.setRowCount(self.tableContent.count("\n"))
-        self.tableWidget.setColumnCount(3)
-        self.tableWidget.setHorizontalHeaderLabels(["Process", "Protocol", "Port"])
+        self.tableWidget.setColumnCount(4)
+        self.tableWidget.setHorizontalHeaderLabels(["Process", "Protocol", "Port", "Allowed"])
         self.lineNum = 0
         for line in self.tableContent.split("\n"):
             (self.proc, self.proto, self.port) = line.split()
             self.tableWidget.setItem(self.lineNum, 0, QTableWidgetItem(self.proc))
             self.tableWidget.setItem(self.lineNum, 1, QTableWidgetItem(self.proto))
             self.tableWidget.setItem(self.lineNum, 2, QTableWidgetItem(self.port))
+            self.checkbox = QTableWidgetItem()
+            self.checkbox.setFlags(self.checkbox.flags() | Qt.ItemIsUserCheckable)
+            self.checkbox.setCheckState(Qt.Unchecked)
+            self.tableWidget.setItem(self.lineNum, 3, self.checkbox)
             self.lineNum += 1
         self.tableWidget.move(0,0)
 
     def applyChanges(self):
-        #self.editAllowedPorts.setText(self.sanitizeInput(self.editAllowedPorts.text()))
         if not self.checkPrivileges():
             return
         if self.checkBoxIpfwEnable.isChecked() == True:
@@ -131,6 +134,20 @@ class simpleIpfwGui(QMainWindow):
         else:
             self.fwEnable = "NO"
             self.serviceAction = "onestop"
+
+        # Add enabled checkboxes to the list
+        items = []
+        for i in range(self.tableWidget.rowCount()):
+            item = self.tableWidget.item(i, 3)
+            if item.checkState() == Qt.Checked:
+                items.append(item)
+
+        for it in items:
+            r = it.row()
+            self.allowedPorts.append(self.tableWidget.item(r, 2).text() + "/" + self.tableWidget.item(r, 1).text().rstrip('46'))
+
+        self.editAllowedPorts.setText(' '.join(self.allowedPorts))
+        self.sanitizeInput(self.editAllowedPorts.text())
 
         print(check_output([SYSRC_BIN, 'firewall_enable=' + self.fwEnable]).rstrip().decode("utf-8"))
         print(check_output([SYSRC_BIN, 'firewall_type=workstation']).rstrip().decode("utf-8"))
@@ -152,7 +169,7 @@ class simpleIpfwGui(QMainWindow):
         return (self.firewallEnabled, self.firewallRunningString, self.firewallRunningBool)
 
     def getAllowedPorts(self):
-        return (check_output([SYSRC_BIN, '-n', 'firewall_myservices'])).strip().decode("utf-8")
+        return (check_output([SYSRC_BIN, '-n', 'firewall_myservices'])).strip().decode("utf-8").split("\n")
 
     def checkPrivileges(self):
         if os.geteuid() != 0:
@@ -173,12 +190,13 @@ class simpleIpfwGui(QMainWindow):
         return (check_output(SOCKSTAT_BIN + ' -46lLwqj0 | tr -s " " | cut -d " " -f 2,5,6 | awk -F\'[ :]\' \'{sub(/\*/, "", $1);sub(/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/, "", $1); conn[$NF] = sprintf("%s %s", $1,$2)} END{for (port in conn){ print conn[port], port}}\' | sort -nk3 | sed \'/\*$/d\'', shell=True))
 
     def sanitizeInput(self, allowedPorts):
-        #allowedPorts = re.sub(',', " ", self.editAllowedPorts.text())
-        print(re.sub(',', " ", self.editAllowedPorts.text()))
-        allowedPorts = re.sub('\s+', " ", self.editAllowedPorts.text())
-        print(self.editAllowedPorts.text())
-        print(allowedPorts)
-        return allowedPorts
+        tmpArray = []
+        for elem in self.editAllowedPorts.text().split(" "):
+            tmpArray.append(elem.strip(' ,;:\t'))
+
+        tmpArray.sort()
+        self.editAllowedPorts.setText(' '.join(list(set(tmpArray))))
+        return
 
 def main():
     ipfwGUI = QApplication(sys.argv)
