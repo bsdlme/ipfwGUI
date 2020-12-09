@@ -28,6 +28,7 @@ import re
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QMessageBox, QStatusBar
+from PyQt5.QtWidgets import QTableWidget,QTableWidgetItem
 from PyQt5.QtWidgets import QGridLayout, QStyle
 from PyQt5.QtWidgets import QLabel, QPushButton, QLineEdit, QCheckBox
 
@@ -81,6 +82,8 @@ class simpleIpfwGui(QMainWindow):
         self.buttonHelp.setFixedWidth(120)
         self.buttonHelp.clicked.connect(QApplication.instance().quit)
 
+        self.createTable()
+
         self.statusBar = QStatusBar()
         self.statusBar.showMessage(self.firewallRunningString)
         self.updateStatusBar()
@@ -91,14 +94,32 @@ class simpleIpfwGui(QMainWindow):
         self.layout.addWidget(self.labelcheckBoxIpfwEnable, 1, 0)
         self.layout.addWidget(self.checkBoxIpfwEnable,      1, 1)
 
-        self.layout.addWidget(self.labelAllowedPorts,       2, 0)
-        self.layout.addWidget(self.editAllowedPorts,        2, 1, 1, 3)
+        self.layout.addWidget(self.tableWidget, 2, 0, 1, 3)
 
-        self.layout.addWidget(self.buttonHelp,              3, 0)
-        self.layout.addWidget(self.buttonApply,             3, 1, alignment=Qt.AlignRight)
-        self.layout.addWidget(self.buttonQuit,              3, 2)
+        self.layout.addWidget(self.labelAllowedPorts,       3, 0)
+        self.layout.addWidget(self.editAllowedPorts,        3, 1, 1, 3)
+
+        self.layout.addWidget(self.buttonHelp,              4, 0)
+        self.layout.addWidget(self.buttonApply,             4, 1, alignment=Qt.AlignRight)
+        self.layout.addWidget(self.buttonQuit,              4, 2)
 
         self.checkPrivileges()
+
+    def createTable(self):
+        self.tableWidget = QTableWidget()
+        self.tableContent = self.getListenPorts().strip().decode("utf-8")
+
+        self.tableWidget.setRowCount(self.tableContent.count("\n"))
+        self.tableWidget.setColumnCount(3)
+        self.tableWidget.setHorizontalHeaderLabels(["Process", "Protocol", "Port"])
+        self.lineNum = 0
+        for line in self.tableContent.split("\n"):
+            (self.proc, self.proto, self.port) = line.split()
+            self.tableWidget.setItem(self.lineNum, 0, QTableWidgetItem(self.proc))
+            self.tableWidget.setItem(self.lineNum, 1, QTableWidgetItem(self.proto))
+            self.tableWidget.setItem(self.lineNum, 2, QTableWidgetItem(self.port))
+            self.lineNum += 1
+        self.tableWidget.move(0,0)
 
     def applyChanges(self):
         #self.editAllowedPorts.setText(self.sanitizeInput(self.editAllowedPorts.text()))
@@ -149,8 +170,15 @@ class simpleIpfwGui(QMainWindow):
         self.statusBar.showMessage(self.firewallRunningString)
 
     def getListenPorts(self):
-        return (check_output(SOCKSTAT_BIN + ' -46lLwqj0 | tr -s " " | cut -d " " -f 2,5,6 | awk -F: \'{sub(/\*/, "", $1); conn[$NF] = $1} END{for (port in conn){ print conn[port], port}}\' | sort -nk3 | sed \'/\*$/d\'', shell=True))
+        return (check_output(SOCKSTAT_BIN + ' -46lLwqj0 | tr -s " " | cut -d " " -f 2,5,6 | awk -F\'[ :]\' \'{sub(/\*/, "", $1);sub(/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/, "", $1); conn[$NF] = sprintf("%s %s", $1,$2)} END{for (port in conn){ print conn[port], port}}\' | sort -nk3 | sed \'/\*$/d\'', shell=True))
 
+    def sanitizeInput(self, allowedPorts):
+        #allowedPorts = re.sub(',', " ", self.editAllowedPorts.text())
+        print(re.sub(',', " ", self.editAllowedPorts.text()))
+        allowedPorts = re.sub('\s+', " ", self.editAllowedPorts.text())
+        print(self.editAllowedPorts.text())
+        print(allowedPorts)
+        return allowedPorts
 
 def main():
     ipfwGUI = QApplication(sys.argv)
