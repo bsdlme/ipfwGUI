@@ -67,7 +67,7 @@ class simpleIpfwGui(QMainWindow):
             self.checkBoxIpfwEnable.setChecked(True)
 
         self.editAllowedPorts = QLineEdit()
-        self.editAllowedPorts.setFixedWidth(340)
+        self.editAllowedPorts.setFixedWidth(500)
         self.editAllowedPorts.setText(' '.join(self.allowedPorts))
 
         self.buttonApply = QPushButton("Apply")
@@ -97,12 +97,13 @@ class simpleIpfwGui(QMainWindow):
         self.layout.addWidget(self.tableWidget, 2, 0, 1, 3)
 
         self.layout.addWidget(self.labelAllowedPorts,       3, 0)
-        self.layout.addWidget(self.editAllowedPorts,        3, 1, 1, 3)
+        self.layout.addWidget(self.editAllowedPorts,        4, 0, 1, 3)
 
-        self.layout.addWidget(self.buttonHelp,              4, 0)
-        self.layout.addWidget(self.buttonApply,             4, 1, alignment=Qt.AlignRight)
-        self.layout.addWidget(self.buttonQuit,              4, 2)
+        self.layout.addWidget(self.buttonHelp,              5, 0)
+        self.layout.addWidget(self.buttonApply,             5, 1, alignment=Qt.AlignRight)
+        self.layout.addWidget(self.buttonQuit,              5, 2)
 
+        self.sanitizeInput(self.editAllowedPorts.text())
         self.checkPrivileges()
 
     def createTable(self):
@@ -111,7 +112,7 @@ class simpleIpfwGui(QMainWindow):
 
         self.tableWidget.setRowCount(self.tableContent.count("\n"))
         self.tableWidget.setColumnCount(4)
-        self.tableWidget.setHorizontalHeaderLabels(["Process", "Protocol", "Port", "Allowed"])
+        self.tableWidget.setHorizontalHeaderLabels(["Process", "Protocol", "Port", "Allow"])
         self.lineNum = 0
         for line in self.tableContent.split("\n"):
             (self.proc, self.proto, self.port) = line.split()
@@ -194,9 +195,17 @@ class simpleIpfwGui(QMainWindow):
         for elem in self.editAllowedPorts.text().split(" "):
             tmpArray.append(elem.strip(' ,;:\t'))
 
-        tmpArray.sort()
-        self.editAllowedPorts.setText(' '.join(list(set(tmpArray))))
+        tmpArray = list(set(tmpArray))
+        tmpArray = sorted(tmpArray, key=natural_keys)
+
+        self.editAllowedPorts.setText(' '.join(tmpArray))
         return
+
+def atoi(text):
+	return int(text) if text.isdigit() else text
+
+def natural_keys(text):
+	return [ atoi(c) for c in re.split('(\d+)',text) ]
 
 def main():
     ipfwGUI = QApplication(sys.argv)
