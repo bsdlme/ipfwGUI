@@ -59,16 +59,16 @@ class simpleIpfwGui(QMainWindow):
         self.labelTitle.setAlignment(Qt.AlignCenter)
 
         self.labelcheckBoxIpfwEnable = QLabel("Enable Firewall? ")
-        self.labelAllowedPorts = QLabel("Allowed incoming ports:")
+        #self.labelAllowedPorts = QLabel("Allowed incoming ports:")
 
         self.checkBoxIpfwEnable = QCheckBox()
         self.checkBoxIpfwEnable.setToolTip('Check this to enable the firewall.')
         if self.firewallEnabled.lower() == "yes":
             self.checkBoxIpfwEnable.setChecked(True)
 
-        self.editAllowedPorts = QLineEdit()
-        self.editAllowedPorts.setFixedWidth(500)
-        self.editAllowedPorts.setText(' '.join(self.allowedPorts))
+        #self.editAllowedPorts = QLineEdit()
+        #self.editAllowedPorts.setFixedWidth(500)
+        #self.editAllowedPorts.setText(' '.join(self.allowedPorts))
 
         self.buttonApply = QPushButton("Apply")
         self.buttonApply.setFixedWidth(120)
@@ -78,9 +78,9 @@ class simpleIpfwGui(QMainWindow):
         self.buttonQuit.setFixedWidth(120)
         self.buttonQuit.clicked.connect(QApplication.instance().quit)
 
-        self.buttonHelp = QPushButton("Help")
-        self.buttonHelp.setFixedWidth(120)
-        self.buttonHelp.clicked.connect(QApplication.instance().quit)
+        #self.buttonClear = QPushButton("Clear")
+        #self.buttonClear.setFixedWidth(120)
+        #self.buttonClear.clicked.connect(self.clearAllowedPorts)
 
         self.createTable()
 
@@ -96,14 +96,14 @@ class simpleIpfwGui(QMainWindow):
 
         self.layout.addWidget(self.tableWidget, 2, 0, 1, 3)
 
-        self.layout.addWidget(self.labelAllowedPorts,       3, 0)
-        self.layout.addWidget(self.editAllowedPorts,        4, 0, 1, 3)
+        #self.layout.addWidget(self.labelAllowedPorts,       3, 0)
+        #self.layout.addWidget(self.editAllowedPorts,        4, 0, 1, 3)
 
-        self.layout.addWidget(self.buttonHelp,              5, 0)
+        #self.layout.addWidget(self.buttonClear,              5, 0)
         self.layout.addWidget(self.buttonApply,             5, 1, alignment=Qt.AlignRight)
         self.layout.addWidget(self.buttonQuit,              5, 2)
 
-        self.sanitizeInput(self.editAllowedPorts.text())
+        #self.sanitizeInput(self.editAllowedPorts.text())
         self.checkPrivileges()
 
     def createTable(self):
@@ -121,7 +121,10 @@ class simpleIpfwGui(QMainWindow):
             self.tableWidget.setItem(self.lineNum, 2, QTableWidgetItem(self.port))
             self.checkbox = QTableWidgetItem()
             self.checkbox.setFlags(self.checkbox.flags() | Qt.ItemIsUserCheckable)
-            self.checkbox.setCheckState(Qt.Unchecked)
+            if str(self.port) + "/" + self.proto.rstrip("46") in self.allowedPorts:
+                self.checkbox.setCheckState(Qt.Checked)
+            else:
+                self.checkbox.setCheckState(Qt.Unchecked)
             self.tableWidget.setItem(self.lineNum, 3, self.checkbox)
             self.lineNum += 1
         self.tableWidget.move(0,0)
@@ -143,17 +146,22 @@ class simpleIpfwGui(QMainWindow):
             if item.checkState() == Qt.Checked:
                 items.append(item)
 
+        self.allowedPortsNew = []
         for it in items:
             r = it.row()
-            self.allowedPorts.append(self.tableWidget.item(r, 2).text() + "/" + self.tableWidget.item(r, 1).text().rstrip('46'))
+            portProto = self.tableWidget.item(r, 2).text() + "/" + self.tableWidget.item(r, 1).text().rstrip('46')
+            self.allowedPortsNew.append(portProto)
 
-        self.editAllowedPorts.setText(' '.join(self.allowedPorts))
-        self.sanitizeInput(self.editAllowedPorts.text())
+        #self.editAllowedPorts.setText(' '.join(self.allowedPorts))
+        #self.sanitizeInput(self.editAllowedPorts.text())
+
+        self.allowedPortsNew = sorted(self.allowedPortsNew, key=natural_keys)
 
         print(check_output([SYSRC_BIN, 'firewall_enable=' + self.fwEnable]).rstrip().decode("utf-8"))
         print(check_output([SYSRC_BIN, 'firewall_type=workstation']).rstrip().decode("utf-8"))
         print(check_output([SYSRC_BIN, 'firewall_allowservices=any']).rstrip().decode("utf-8"))
-        print(check_output([SYSRC_BIN, 'firewall_myservices=' + self.editAllowedPorts.text().strip()]).decode("utf-8"))
+        #print(check_output([SYSRC_BIN, 'firewall_myservices=' + ' '.join(self.editAllowedPorts.text().strip())].decode("utf-8")))
+        print(check_output([SYSRC_BIN, 'firewall_myservices=' + ' '.join(self.allowedPortsNew)]))
         print(check_output([SERVICE_BIN, 'ipfw', self.serviceAction]))
         (self.firewallEnabled, self.firewallRunningString, self.firewallRunningBool) = self.getFirewallState()
         self.updateStatusBar()
@@ -170,7 +178,18 @@ class simpleIpfwGui(QMainWindow):
         return (self.firewallEnabled, self.firewallRunningString, self.firewallRunningBool)
 
     def getAllowedPorts(self):
-        return (check_output([SYSRC_BIN, '-n', 'firewall_myservices'])).strip().decode("utf-8").split("\n")
+        return (check_output([SYSRC_BIN, '-n', 'firewall_myservices'])).strip().decode("utf-8").split(" ")
+
+    #def clearAllowedPorts(self):
+    #    self.editAllowedPorts.setText('')
+    #    return
+
+    #def updateAllowedPorts(self, state):
+    #    if state == Qt.Checked:
+    #    else:
+    #    
+    #    self.sanitizeInput(self.editAllowedPorts.text())
+    #    return
 
     def checkPrivileges(self):
         if os.geteuid() != 0:
@@ -190,16 +209,16 @@ class simpleIpfwGui(QMainWindow):
     def getListenPorts(self):
         return (check_output(SOCKSTAT_BIN + ' -46lLwqj0 | tr -s " " | cut -d " " -f 2,5,6 | awk -F\'[ :]\' \'{sub(/\*/, "", $1);sub(/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/, "", $1); conn[$NF] = sprintf("%s %s", $1,$2)} END{for (port in conn){ print conn[port], port}}\' | sort -nk3 | sed \'/\*$/d\'', shell=True))
 
-    def sanitizeInput(self, allowedPorts):
-        tmpArray = []
-        for elem in self.editAllowedPorts.text().split(" "):
-            tmpArray.append(elem.strip(' ,;:\t'))
+    #def sanitizeInput(self, allowedPorts):
+    #    tmpArray = []
+    #    for elem in self.editAllowedPorts.text().split(" "):
+    #        tmpArray.append(elem.strip(' ,;:\t'))
 
-        tmpArray = list(set(tmpArray))
-        tmpArray = sorted(tmpArray, key=natural_keys)
+    #    tmpArray = list(set(tmpArray))
+    #    tmpArray = sorted(tmpArray, key=natural_keys)
 
-        self.editAllowedPorts.setText(' '.join(tmpArray))
-        return
+    #    self.editAllowedPorts.setText(' '.join(tmpArray))
+    #    return
 
 def atoi(text):
 	return int(text) if text.isdigit() else text
