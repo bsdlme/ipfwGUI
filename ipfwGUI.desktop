@@ -1,6 +1,6 @@
 [Desktop Entry]
 Encoding=UTF-8
-Name=Firewall GUI
+Name=ipfwGUI
 Comment=Simple configuration GUI for the ipfw firewall
 Exec=ipfwGUI
 Icon=firewall-config
