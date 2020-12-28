@@ -1,10 +1,9 @@
 [Desktop Entry]
-Encoding=UTF-8
 Name=ipfwGUI
 Comment=Simple configuration GUI for the ipfw firewall
-Exec=ipfwGUI
+Exec=dsbsu ipfwGUI
 Icon=firewall-config
 Terminal=false
 StartupNotify=false
 Type=Application
-Categories=Network;System
+Categories=Network;
