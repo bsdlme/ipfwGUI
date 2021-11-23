@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.7
+#!/usr/bin/env python3
 
 # Copyright (c) 2020 Lars Engels. All rights reserved.
 # 
