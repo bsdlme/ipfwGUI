@@ -16,5 +16,6 @@ pkg install py38-qt5
 
 If you run ipfwGUI as a user you can only view the current settings. To actually be able to change settings you need to run ipfwGUI with doas or sudo.
 
+#### Screenshot
 
 ![screenshot](https://github.com/bsdlme/ipfwGUI/blob/main/screenshots/screenshot1.jpg?raw=true)
