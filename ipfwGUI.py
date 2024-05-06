@@ -26,12 +26,11 @@ import os
 import sys
 import re
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QMessageBox, QStatusBar
-from PyQt5.QtWidgets import QTableWidget,QTableWidgetItem
-from PyQt5.QtWidgets import QGridLayout, QStyle
-from PyQt5.QtWidgets import QLabel, QPushButton, QLineEdit, QCheckBox
-
+from PyQt6.QtWidgets import (
+    QApplication, QMainWindow, QMessageBox, QWidget, QFormLayout, QCheckBox,
+    QLabel, QLineEdit, QPushButton, QTableWidget, QTableWidgetItem,
+    QStatusBar, QGridLayout, QStyle)
+from PyQt6.QtCore import Qt
 from subprocess import check_output
 
 SYSRC_BIN = '/usr/sbin/sysrc'
@@ -56,7 +55,7 @@ class simpleIpfwGui(QMainWindow):
 
     def widgets(self):
         self.labelTitle = QLabel("Simple Firewall GUI for FreeBSD")
-        self.labelTitle.setAlignment(Qt.AlignCenter)
+        self.labelTitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.labelcheckBoxIpfwEnable = QLabel("Enable Firewall? ")
         #self.labelAllowedPorts = QLabel("Allowed incoming ports:")
@@ -100,7 +99,7 @@ class simpleIpfwGui(QMainWindow):
         #self.layout.addWidget(self.editAllowedPorts,        4, 0, 1, 3)
 
         #self.layout.addWidget(self.buttonClear,              5, 0)
-        self.layout.addWidget(self.buttonApply,             5, 1, alignment=Qt.AlignRight)
+        self.layout.addWidget(self.buttonApply,             5, 1, alignment=Qt.AlignmentFlag.AlignRight)
         self.layout.addWidget(self.buttonQuit,              5, 2)
 
         #self.sanitizeInput(self.editAllowedPorts.text())
@@ -120,11 +119,11 @@ class simpleIpfwGui(QMainWindow):
             self.tableWidget.setItem(self.lineNum, 1, QTableWidgetItem(self.proto))
             self.tableWidget.setItem(self.lineNum, 2, QTableWidgetItem(self.port))
             self.checkbox = QTableWidgetItem()
-            self.checkbox.setFlags(self.checkbox.flags() | Qt.ItemIsUserCheckable)
+            self.checkbox.setFlags(self.checkbox.flags() | Qt.ItemFlag.ItemIsUserCheckable)
             if str(self.port) + "/" + self.proto.rstrip("46") in self.allowedPorts:
-                self.checkbox.setCheckState(Qt.Checked)
+                self.checkbox.setCheckState(Qt.CheckState.Checked)
             else:
-                self.checkbox.setCheckState(Qt.Unchecked)
+                self.checkbox.setCheckState(Qt.CheckState.Unchecked)
             self.tableWidget.setItem(self.lineNum, 3, self.checkbox)
             self.lineNum += 1
         self.tableWidget.move(0,0)
@@ -143,7 +142,7 @@ class simpleIpfwGui(QMainWindow):
         items = []
         for i in range(self.tableWidget.rowCount()):
             item = self.tableWidget.item(i, 3)
-            if item.checkState() == Qt.Checked:
+            if item.checkState() == Qt.CheckState.Checked:
                 items.append(item)
 
         self.allowedPortsNew = []
@@ -232,7 +231,7 @@ def main():
     gui = simpleIpfwGui()
     gui.show()
     # Center main window
-    gui.setGeometry(QStyle.alignedRect(Qt.LeftToRight, Qt.AlignCenter, gui.size(), 
+    gui.setGeometry(QStyle.alignedRect(Qt.LayoutDirection. LeftToRight, Qt.AlignmentFlag.AlignCenter, gui.size(),
         ipfwGUI.primaryScreen().geometry()))
 
     sys.exit(ipfwGUI.exec())
