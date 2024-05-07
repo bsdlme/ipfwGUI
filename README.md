@@ -6,10 +6,10 @@ The ports to be allowed can be only be selected from a list of ports in LISTEN s
 
 #### Installation
 
-ipfwGUI needs Python3 and PyQt5 to run. To install it run:
+ipfwGUI needs Python3 and PyQt6 to run. To install it run:
 
 ```
-pkg install python3 py38-qt5
+pkg install python3 py39-qt6-pyqt
 ```
 
 #### Running ipfwGUI
