@@ -7,3 +7,16 @@ Terminal=false
 StartupNotify=false
 Type=Application
 Categories=Network;
+Actions=StartFirewall;StopFirewall
+
+[Desktop Action StartFirewall]
+Name=Start the firewall
+Comment=Start the firewall with current rules
+Icon=firewall-applet-shields_up
+Exec=dsbsu "/usr/sbin/service ipfw onestart"
+
+[Desktop Action StopFirewall]
+Name=Stop the firewall
+Comment=Stop the firewall
+Icon=firewall-applet-symbolic
+Exec=dsbsu "/usr/sbin/service ipfw forcestop"
